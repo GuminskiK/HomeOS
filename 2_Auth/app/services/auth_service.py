@@ -52,17 +52,10 @@ async def login(
         
         totp = pyotp.TOTP(user.totp_secret)
         if not totp.verify(mfa_code):
-            if user.backup_codes and mfa_code in user.backup_codes:
-                user.backup_codes.remove(mfa_code)
-                session.add(user)
-                await session.commit()
-                logger.info(
-                    "backup_code_used", username=user.username, user_id=str(user.id)
-                )
-                mfa_verified = True
-            else:
-                logger.warning("invalid_2fa_code_attempt", username=user.username)
-                raise Invalid2FACodeException()
+            logger.warning("invalid_2fa_code_attempt", username=user.username)
+            raise Invalid2FACodeException()
+        
+        mfa_verified = True
 
     generated_session_id = str(uuid.uuid4())
 

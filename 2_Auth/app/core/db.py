@@ -9,3 +9,5 @@ db_deps = DBDependency(database_url=settings.DATABASE_URL, redis_url=settings.RE
 
 db_session = Annotated[AsyncSession, Depends(db_deps.get_session)]
 redis_client = Annotated[redis.Redis, Depends(db_deps.get_redis)]
+
+redis_pure = db_deps.get_redis()

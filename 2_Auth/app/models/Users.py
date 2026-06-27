@@ -41,8 +41,7 @@ class User(UserBase, table=True):
 
     totp_secret: str | None = Field(default=None)
     is_totp_enabled: bool = Field(default=False)
-    backup_codes: list[str] | None = Field(default=None, sa_column=Column(JSON))
-
+    
     api_keys: List["APIKey"] = Relationship(back_populates="owner")
 
 

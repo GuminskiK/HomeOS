@@ -49,3 +49,9 @@ class AdminNeededException(ForbiddenException):
 class AdminOrOwnerNeededException(ForbiddenException):
     def __init__(self, detail: str = "Not authorized to perform this action"):
         super().__init__(detail="Only admin or owner can perform this action")
+
+
+## Rest ##
+class NoSessionAndNoAPIKey(UnauthorizedException):
+    def __init__(self, detail: str = "Unauthorized"):
+        super().__init__(detail="No valid session or API keySS")

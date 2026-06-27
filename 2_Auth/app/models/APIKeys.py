@@ -18,5 +18,5 @@ class APIKey(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     last_used_at: Optional[datetime] = Field(default=None)
 
-    user_id: int = Field(foreign_key="user.id")
+    user_id: UUID = Field(foreign_key="user.id")
     owner: Optional["User"] = Relationship(back_populates="api_keys")

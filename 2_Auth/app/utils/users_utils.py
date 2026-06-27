@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlmodel import select
 
 from app.models.Users import User
