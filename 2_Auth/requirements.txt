@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlmodel[asyncio]
+asyncpg
+httpx
+pydantic-settings
+redis
+pyotp
+qrcode
+argon2-cffi
+python-multipart
+pillow
+structlog
+python-json-logger
+slowapi
