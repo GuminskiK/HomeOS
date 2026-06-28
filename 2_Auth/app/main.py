@@ -14,7 +14,7 @@ from common.logging_middleware import StructlogMiddleware
 from app.core.config import settings
 from app.models.Users import User
 
-from app.api import auth, apikeys, two_fa
+from app.api import auth, apikeys, two_fa, users
 
 setup_logging(json_logs=False, log_level="INFO")
 
@@ -35,8 +35,23 @@ async def lifespan(app: FastAPI):
     
     print("Zsynchronizowano klucze API z Redis")
 
+    async with AsyncSessionLocal as session:
+        query = select(User)
+        result = await session.exec(query)
+        users = result.all()
+    
+        if not users:
+            from app.utils.auth_utils import get_password_hash
 
-    ## TODO ADD USER
+            hashed_password = get_password_hash(settings.ADMIN_PASSWORD)
+            admin_user = User(
+                username=settings.ADMIN_USERNAME,
+                hashed_password=hashed_password,
+                is_superuser=True,
+            )
+            session.add(admin_user)
+            await session.commit()
+            print("Utworzono domyślnego użytkownika administratora")
     
     yield
 
@@ -51,6 +66,7 @@ app.add_middleware(SlowAPIMiddleware)
 app.include_router(auth.router)
 app.include_router(two_fa.router)
 app.include_router(apikeys.router)
+app.include_router(users.router)
 
 origins = [
     "http://localhost.tiangolo.com",

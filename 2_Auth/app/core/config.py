@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     DUMMY_HASH: str = "$argon2id$v=19$m=65536,t=2,p=2$Wm9uZQ$Wm9uZQ"
 
     # First User settings
-    FIRST_USER_USERNAME: str = "admin"
-    FIRST_USER_PASSWORD: str = "admin"
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = "admin"
 
     # Database settings
     DATABASE_URL: str = "sqlite:///./test.db"
