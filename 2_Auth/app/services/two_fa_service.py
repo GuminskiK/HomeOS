@@ -12,14 +12,22 @@ from app.core.exceptions import (
     TwoFaNotInitiatedException,
     TwoFaSecretMissingException,
 )
-from app.models.Users import User
 from app.core.db import db_session
 from common.logger import get_logger
+from common.users import CurrentUserContext
+from app.utils.users_utils import get_user_by_id
 
 logger = get_logger(__name__)
 
 
-async def generate_setup_data(user: User, session: db_session):
+async def generate_setup_data(user_context: CurrentUserContext, session: db_session):
+    
+    user = await get_user_by_id(session, user_context.id)
+    
+    if not user:
+        logger.error("user_not_found", user_id=str(user_context.id))
+        raise ValueError("User not found")
+
     if user.is_totp_enabled:
         logger.info("2fa_setup_already_enabled", user_id=str(user.id))
         raise TwoFaAlreadyEnabledException()
@@ -42,7 +50,13 @@ async def generate_setup_data(user: User, session: db_session):
     }
 
 
-async def verify_and_enable(user: User, session: db_session, code: str):
+async def verify_and_enable(user_context: CurrentUserContext, session: db_session, code: str):
+
+    user = await get_user_by_id(session, user_context.id)
+    
+    if not user:
+        logger.error("user_not_found", user_id=str(user_context.id))
+        raise ValueError("User not found")
 
     if user.is_totp_enabled:
         raise TwoFaAlreadyEnabledException()
@@ -63,7 +77,13 @@ async def verify_and_enable(user: User, session: db_session, code: str):
     return {"message": "2FA successfully enabled"}
 
 
-async def verify_and_disable(user: User, session: db_session, code: str):
+async def verify_and_disable(user_context: CurrentUserContext, session: db_session, code: str):
+
+    user = await get_user_by_id(session, user_context.id)
+
+    if not user:
+        logger.error("user_not_found", user_id=str(user_context.id))
+        raise ValueError("User not found")
 
     if not user.is_totp_enabled:
         raise TwoFaNotEnabledException()

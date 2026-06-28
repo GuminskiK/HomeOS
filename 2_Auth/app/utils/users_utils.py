@@ -2,9 +2,10 @@ from sqlmodel import select
 
 from app.models.Users import User
 from app.core.db import db_session
+from uuid import UUID
 
 
-async def get_user_by_id(session: db_session, id: int) -> User | None:
+async def get_user_by_id(session: db_session, id: UUID) -> User | None:
     result = await session.exec(select(User).where(User.id == id))
     user = result.one_or_none()
     return user
