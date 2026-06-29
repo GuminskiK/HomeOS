@@ -4,8 +4,7 @@ from uuid import uuid4, UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from app.models.Users import User
-
+from .Users import User
 
 class APIKey(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, index=True, primary_key=True, nullable=False)

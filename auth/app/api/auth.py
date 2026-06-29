@@ -6,7 +6,7 @@ from app.services.auth_service import login, logout
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login")
-async def login(    
+async def login_route(    
     request: Request,
     response: Response,
     redis: redis_client,
@@ -27,7 +27,7 @@ async def login(
     return login_response
 
 @router.post("/logout")
-async def logout(
+async def logout_route(
     request: Request, 
     response: Response, 
     redis: redis_client):

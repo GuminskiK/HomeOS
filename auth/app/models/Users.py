@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, List, Optional
 from uuid import uuid4, UUID
 
 from pydantic import field_validator
-from sqlmodel import JSON, Column, Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .APIKeys import APIKey
