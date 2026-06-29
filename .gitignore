@@ -1,4 +1,9 @@
 .venv/*
 .env
 
+.venv/*
+.env
+0_Frontend/HomeOS/node_modules/
+**/__pycache__/
+nginx/certs/*
 
