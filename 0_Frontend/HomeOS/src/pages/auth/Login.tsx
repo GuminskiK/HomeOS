@@ -10,10 +10,12 @@ import {
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { Eye, EyeOff } from "lucide-react"
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false)
-
+    const navigate = useNavigate();
+    
     const handleLogin = async (event: React.SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
@@ -32,6 +34,10 @@ export default function Login() {
                     }
                 }
             );
+
+            if (response.status === 200) {
+                navigate('/dashboard'); 
+            }
         return response.data;
         } catch (error) {
             console.error('Login failed:', error);
