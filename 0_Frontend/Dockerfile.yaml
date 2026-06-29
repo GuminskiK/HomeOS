@@ -1,0 +1,15 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Kopiujemy pliki projektu
+COPY HomeOS/package*.json ./
+RUN npm install --legacy-peer-deps
+
+COPY HomeOS/ .
+
+# Wystawiamy port Vite
+EXPOSE 5173
+
+# Odpalamy serwer deweloperski Vite
+CMD ["npm", "run", "dev"]
