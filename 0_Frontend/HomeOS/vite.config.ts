@@ -16,8 +16,5 @@ export default defineConfig({
     host: '0.0.0.0', // alternatywnie po prostu: true
     port: 5173,
     allowedHosts: ['frontend_backend'],
-    proxy: {
-      '/api': 'http://localhost', // Tu przekierowujesz na port bramy (80)
-    }
   }
 })

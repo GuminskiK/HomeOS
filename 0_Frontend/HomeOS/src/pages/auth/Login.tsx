@@ -17,14 +17,22 @@ export default function Login() {
     const handleLogin = async (event: React.SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const credentials = {
-            username: formData.get('username') as string,
-            password: formData.get('password') as string
-        };
+        const username = formData.get("username") as string;
+        const password = formData.get("password") as string;
 
         try {
-            const response = await api.post('/auth/login', credentials);
-            return response.data;
+            const response = await api.post('/api/auth/login', 
+                {
+                    username: username,
+                    password: password
+                }, 
+                {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }
+            );
+        return response.data;
         } catch (error) {
             console.error('Login failed:', error);
         }
@@ -47,6 +55,7 @@ export default function Login() {
                 <Label htmlFor="username">Username</Label>
                 <Input
                     id="username"
+                    name="username"
                     type="text"
                     placeholder="username"
                     required
@@ -57,7 +66,8 @@ export default function Login() {
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                     <Input 
-                    id="password" 
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"} 
                     className="pr-10"
                     required 
