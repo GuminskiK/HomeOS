@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label.tsx"
 import { useNavigate } from 'react-router-dom';
 import { useAuth  } from '../../context/AuthContext.tsx';
 import { PasswordInput } from '@/components/custom/PasswordInput.tsx';
-import { loginToGetSession } from '@/api/auth/auth.ts';
 
 export default function Login() {
     const navigate = useNavigate();
     const { isAuthenticated, isLoading } = useAuth();
+    const { login } = useAuth();
 
     useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -32,7 +32,7 @@ export default function Login() {
         const password = formData.get("password") as string; // TO NADAL DZIAŁA IDEALNIE!
 
         try {
-            const response = await loginToGetSession(username, password);
+            const response = await login(username, password);
 
             if (response.status === 200) {
                 navigate('/dashboard'); 

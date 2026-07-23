@@ -1,7 +1,7 @@
 from fastapi import Depends, Form, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from common.SessionData import SessionData
-from app.core.db import db_session, redis_client
+from sqlmodel.ext.asyncio.session import AsyncSession
+import redis.asyncio as redis
 from app.utils.auth_utils import verify_password
 from app.utils.users_utils import get_user_by_username
 from app.core.exceptions import (
@@ -11,9 +11,7 @@ from app.core.exceptions import (
     TwoFaSecretMissingException
 )
 import asyncio
-import uuid
 import pyotp
-from datetime import timezone, datetime
 from app.core.config import settings
 from common.logger import get_logger
 from app.services.session_service import createSession
@@ -22,8 +20,8 @@ logger = get_logger(__name__)
 async def login(
     request: Request,
     response: Response,
-    redis: redis_client,
-    session: db_session,
+    redis: redis.Redis,
+    session: AsyncSession,
     form_data: OAuth2PasswordRequestForm = Depends(),
     mfa_code: str | None = Form(default=None),
 ):
@@ -60,7 +58,7 @@ async def login(
 
     return {"message": "Logged in successfully!"}
 
-async def logout(request: Request, response: Response, redis: redis_client):
+async def logout(request: Request, response: Response, redis: redis.Redis):
     session_id = request.cookies.get(settings.SESSION_COOKIE_NAME)
     if session_id:
         await redis.delete(f"session:{session_id}")

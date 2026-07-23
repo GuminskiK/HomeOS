@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body
 
-from app.core.user import current_user
+from app.core.user import CurrentUser
 from app.core.config import settings
 from app.services.two_fa_service import (
     generate_setup_data,
@@ -15,14 +15,14 @@ APP_NAME = settings.APP_NAME
 
 
 @router.post("/setup")
-async def setup_2fa(user: current_user, session: db_session):
+async def setup_2fa(user: CurrentUser, session: db_session):
 
     return await generate_setup_data(user, session)
 
 
 @router.post("/enable")
 async def enable_2fa(
-    user: current_user, 
+    user: CurrentUser, 
     session: db_session, 
     code: str = Body(..., embed=True)
 ):
@@ -30,7 +30,7 @@ async def enable_2fa(
 
 @router.post("/disable")
 async def disable_2fa(
-    user: current_user,
+    user: CurrentUser,
     session: db_session,
     code: str = Body(..., embed=True)
 ):

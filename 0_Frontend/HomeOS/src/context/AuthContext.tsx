@@ -1,6 +1,6 @@
-// src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../api/axiosClient';
+import { loginApi, logoutApi } from '@/api/auth/auth';
 
 interface User {
   username: string;
@@ -12,8 +12,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
+  login: (username: string, password: string) => Promise<any>;
+  logout: () => Promise<boolean>;
   updateUser: (updatedData: User) => void;
 }
 
@@ -44,26 +44,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const handleUnauthorized = () => {
-      // Serwer powiedział, że nie mamy już sesji.
-      // Czyścimy stan użytkownika. To sprawi, że ProtectedRoute zrobi redirect.
       setUser(null); 
     };
 
-    // Zaczynamy nasłuchiwać
     window.addEventListener('auth:unauthorized', handleUnauthorized);
-
-    // Sprzątamy po sobie, gdyby komponent został odmontowany
     return () => {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
   }, []);
 
-  const login = useCallback(async () => {
+  const login = useCallback(async (username: string, password: string) => {
+    const data = await loginApi(username, password);
     await fetchUserProfile();
+    return data;
   }, [fetchUserProfile]);
 
   const logout = useCallback(async () => {
-    setUser(null);
+    try {
+      const response = await logoutApi();
+      if (response.status === 200) {
+        setUser(null);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Błąd podczas wylogowywania:", error);
+      return false;
+    }
   }, []);
 
   const updateUser = useCallback((updatedData: User) => {

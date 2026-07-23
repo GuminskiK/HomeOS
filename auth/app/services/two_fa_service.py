@@ -12,7 +12,7 @@ from app.core.exceptions import (
     TwoFaNotInitiatedException,
     TwoFaSecretMissingException,
 )
-from app.core.db import db_session
+from sqlmodel.ext.asyncio.session import AsyncSession
 from common.logger import get_logger
 from common.users import CurrentUserContext
 from app.utils.users_utils import get_user_by_id
@@ -20,7 +20,7 @@ from app.utils.users_utils import get_user_by_id
 logger = get_logger(__name__)
 
 
-async def generate_setup_data(user_context: CurrentUserContext, session: db_session):
+async def generate_setup_data(user_context: CurrentUserContext, session: AsyncSession):
     
     user = await get_user_by_id(session, user_context.user_id)
     
@@ -50,7 +50,7 @@ async def generate_setup_data(user_context: CurrentUserContext, session: db_sess
     }
 
 
-async def verify_and_enable(user_context: CurrentUserContext, session: db_session, code: str):
+async def verify_and_enable(user_context: CurrentUserContext, session: AsyncSession, code: str):
 
     user = await get_user_by_id(session, user_context.user_id)
 
@@ -77,7 +77,7 @@ async def verify_and_enable(user_context: CurrentUserContext, session: db_sessio
     return {"message": "2FA successfully enabled"}
 
 
-async def verify_and_disable(user_context: CurrentUserContext, session: db_session, code: str):
+async def verify_and_disable(user_context: CurrentUserContext, session: AsyncSession, code: str):
 
     user = await get_user_by_id(session, user_context.user_id)
 

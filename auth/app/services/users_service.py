@@ -15,15 +15,16 @@ from uuid import UUID, uuid4
 
 from app.models.Users import User, UserCreate, UserUpdate
 from app.utils.users_utils import get_user_by_id, get_user_by_username
-from app.core.db import db_session, redis_client
 from common.logger import get_logger
 from common.CurrentUserContext import CurrentUserContext
 from app.services.session_service import getSessionsByUserId, updateSession
+from sqlmodel.ext.asyncio.session import AsyncSession
+import redis.asyncio as redis
 
 logger = get_logger(__name__)
 
 async def create_user(
-        session: db_session,
+        session: AsyncSession,
         user: UserCreate
 ):
     if await get_user_by_username(session, user.username):
@@ -44,7 +45,7 @@ async def create_user(
     return db_user
 
 async def fetch_user_by_id(
-    session: db_session, 
+    session: AsyncSession, 
     user_id: UUID
 ) -> User:
     
@@ -54,14 +55,14 @@ async def fetch_user_by_id(
         raise UserNotFoundException()
     return user
 
-async def fetch_all_users(session: db_session) -> list[User]:
+async def fetch_all_users(session: AsyncSession) -> list[User]:
     result = await session.exec(select(User))
     users = list(result.all())
     return users
 
 async def update_user(
-    redis: redis_client,
-    session: db_session, 
+    redis: redis.Redis,
+    session: AsyncSession, 
     current_user: CurrentUserContext, 
     user_update: UserUpdate,
     is_me: bool
@@ -91,8 +92,8 @@ async def update_user(
     return user
 
 async def upload_avatar(
-    redis: redis_client,
-    session: db_session,
+    redis: redis.Redis,
+    session: AsyncSession,
     user: CurrentUserContext,
     file: UploadFile = File(...), 
 ):
@@ -135,7 +136,7 @@ async def upload_avatar(
     logger.info("user_avatar_uploaded_succesfully", user_id=user.user_id)
     return {"avatar_url": avatar_url}
 
-async def remove_user(session: db_session, user_id: UUID):
+async def remove_user(session: AsyncSession, user_id: UUID):
     user = await get_user_by_id(session, user_id)
     if not user:
         logger.warning("user_remove_failed_not_found", user_id=user_id)

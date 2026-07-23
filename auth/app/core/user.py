@@ -15,6 +15,6 @@ auth_dependency = AuthDependency(
     db_session=session
 )
 
-current_user = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_session)]
-admin_user = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_admin_session)]
-admin_or_owner_user = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_owner_or_admin_session)]
+CurrentUser = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_session)]
+AdminUser = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_admin_session())]
+AdminOrOwner = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_owner_or_admin_session())]

@@ -1,4 +1,4 @@
-from app.core.db import db_session, redis_client
+import redis.asyncio as redis
 from app.models.Users import User
 from common.SessionData import SessionData
 from uuid import UUID, uuid4
@@ -14,7 +14,7 @@ async def createSession(
     request: Request,
     response: Response,
     user: User,
-    redis: redis_client,
+    redis: redis.Redis,
 ) -> None:
 
     generated_session_id = str(uuid4())
@@ -66,7 +66,7 @@ async def createSession(
     logger.info("created_session_for_user", user_id=str(user.id), device=device, ip=ip, uuid=str(user.id))
 
 async def getSessionsByUserId(
-    redis: redis_client,
+    redis: redis.Redis,
     user_id: UUID
 ) -> list[str]:
     session_ids = await redis.smembers(f"user_sessions:{user_id}")
@@ -84,7 +84,7 @@ async def getSessionsByUserId(
 
 
 async def updateSession(
-    redis: redis_client,
+    redis: redis.Redis,
     session_id: str,
     updated_data: dict
 ) -> None:
@@ -99,7 +99,7 @@ async def updateSession(
 
 
 async def deleteSession(
-    redis: redis_client,
+    redis: redis.Redis,
     session_id: str
 ) -> None:
     await redis.delete(f"session:{session_id}")

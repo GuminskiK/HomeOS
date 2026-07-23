@@ -4,7 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 import path from "path"
 
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -13,8 +12,15 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0', // alternatywnie po prostu: true
+    host: '0.0.0.0',
     port: 5173,
     allowedHosts: ['frontend_backend'],
+    proxy: {
+      '/api': {
+        target: 'http://auth:8000', 
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 })

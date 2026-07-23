@@ -22,7 +22,6 @@ class AuthDependency:
         self.session_cookie_name = session_cookie_name
         self.SESSION_TTL = session_ttl
         self.redis = redis
-        self.db_session = db_session
 
     async def get_current_session(
         self, 
@@ -83,7 +82,7 @@ class AuthDependency:
 
         raise NoSessionAndNoAPIKey()
     
-    async def get_current_admin_session(self):
+    def get_current_admin_session(self):
         async def _get_current_admin_user(
             current_user: CurrentUserContext = Depends(self.get_current_session)
         ) -> CurrentUserContext:
@@ -92,9 +91,9 @@ class AuthDependency:
             return current_user
         return _get_current_admin_user
 
-    async def get_current_owner_or_admin_session(self):
+    def get_current_owner_or_admin_session(self):
         async def _get_current_owner_or_admin_user(
-            user_id: int,
+            user_id: UUID,
             current_user: CurrentUserContext = Depends(self.get_current_session)
         ) -> CurrentUserContext:
             if current_user.user_id != user_id and not current_user.is_superuser:
