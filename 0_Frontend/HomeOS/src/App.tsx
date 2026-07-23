@@ -6,27 +6,30 @@ import Dashboard from "./pages/dashboard/Dahsborad.tsx"
 import AdminPanel from "./pages/dashboard/AdminPanel.tsx"
 import Profile from "./pages/dashboard/Profile.tsx"
 import { ProtectedRoute } from './components/ProtectedRoute.tsx';
+import {AuthProvider} from './context/AuthContext.tsx';
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
 
-        <Route path="/" element={<Hello />} />
-        <Route path="/login" element={<Login />} />
-        
-        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Hello />} />
+          <Route path="/login" element={<Login />} />
           
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          
-        </Route>
+          <Route element={<ProtectedRoute />}>
+            
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            
+          </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
 
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

@@ -69,6 +69,25 @@ class EmailTakenException(BadRequestException):
         super().__init__(detail="Email taken")
 
 
+class NoFileException(BadRequestException):
+    def __init__(self, detail: str = "Bad Request"):
+        super().__init__(detail="No file uploaded")
+
+class NoFileTypeException(BadRequestException):
+    def __init__(self, detail: str = "Bad Request"):
+        super().__init__(detail="File type is missing")
+
+class NoFileNameException(BadRequestException):
+    def __init__(self, detail: str = "Bad Request"):
+        super().__init__(detail="File name is missing")
+
+class WrongFileTypeException(BadRequestException):
+    def __init__(self, detail: str = "Bad Request"):
+        super().__init__(detail="Wrong file type")
+
+
+
+
 ## UnauthorizedException ##
 
 

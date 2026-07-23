@@ -5,8 +5,9 @@ import { api } from "@/api/axiosClient";
 import { useState } from "react";
 import ProfileSettings from "./ProfileSettings";
 import ProfileSecurity from "./ProfileSecurity";
+import ProfileAPIKeys from "./ProfileAPIKeys";
 
-type Tab =  'settings' | 'security' | 'preferences';
+type Tab =  'settings' | 'security' | 'apikeys' | 'preferences';
 
 export default function Profile() {
 
@@ -38,6 +39,12 @@ export default function Profile() {
                             Security
                         </Button>
                         <Button 
+                            variant={activeTab === 'apikeys' ? 'default' : 'outline'} 
+                            onClick={() => setActiveTab('apikeys')}
+                        >
+                            APIKeys
+                        </Button>
+                        <Button 
                             variant={activeTab === 'preferences' ? 'default' : 'outline'} 
                             onClick={() => setActiveTab('preferences')}
                         >
@@ -56,6 +63,9 @@ export default function Profile() {
                     )}
                     {activeTab === 'security' && (
                         <ProfileSecurity />
+                    )}
+                    {activeTab === 'apikeys' && (
+                        <ProfileAPIKeys />
                     )}
                     {activeTab === 'preferences' && (
                         <div>

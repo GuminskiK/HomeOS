@@ -22,10 +22,10 @@ logger = get_logger(__name__)
 
 async def generate_setup_data(user_context: CurrentUserContext, session: db_session):
     
-    user = await get_user_by_id(session, user_context.id)
+    user = await get_user_by_id(session, user_context.user_id)
     
     if not user:
-        logger.error("user_not_found", user_id=str(user_context.id))
+        logger.error("user_not_found", user_id=str(user_context.user_id))
         raise ValueError("User not found")
 
     if user.is_totp_enabled:
@@ -52,10 +52,10 @@ async def generate_setup_data(user_context: CurrentUserContext, session: db_sess
 
 async def verify_and_enable(user_context: CurrentUserContext, session: db_session, code: str):
 
-    user = await get_user_by_id(session, user_context.id)
-    
+    user = await get_user_by_id(session, user_context.user_id)
+
     if not user:
-        logger.error("user_not_found", user_id=str(user_context.id))
+        logger.error("user_not_found", user_id=str(user_context.user_id))
         raise ValueError("User not found")
 
     if user.is_totp_enabled:
@@ -79,10 +79,10 @@ async def verify_and_enable(user_context: CurrentUserContext, session: db_sessio
 
 async def verify_and_disable(user_context: CurrentUserContext, session: db_session, code: str):
 
-    user = await get_user_by_id(session, user_context.id)
+    user = await get_user_by_id(session, user_context.user_id)
 
     if not user:
-        logger.error("user_not_found", user_id=str(user_context.id))
+        logger.error("user_not_found", user_id=str(user_context.user_id))
         raise ValueError("User not found")
 
     if not user.is_totp_enabled:

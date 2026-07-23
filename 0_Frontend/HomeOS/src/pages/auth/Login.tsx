@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { api } from '../../api/axiosClient.ts';
 import { Button } from "@/components/ui/button.tsx"
 import {
@@ -9,40 +9,34 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
-import { Eye, EyeOff } from "lucide-react"
 import { useNavigate } from 'react-router-dom';
 import { useAuth  } from '../../context/AuthContext.tsx';
+import { PasswordInput } from '@/components/custom/PasswordInput.tsx';
+import { loginToGetSession } from '@/api/auth/auth.ts';
 
 export default function Login() {
-    const [showPassword, setShowPassword] = useState(false)
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
+
+    useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+        navigate('/dashboard', { replace: true });
+    }
+    }, [isAuthenticated, isLoading, navigate]);
+
 
     const handleLogin = async (event: React.SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const username = formData.get("username") as string;
-        const password = formData.get("password") as string;
+        const password = formData.get("password") as string; // TO NADAL DZIAŁA IDEALNIE!
 
         try {
-            const response = await api.post('/api/auth/login', 
-                {
-                    username: username,
-                    password: password
-                }, 
-                {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }
-            );
-
-            login(response.data);
+            const response = await loginToGetSession(username, password);
 
             if (response.status === 200) {
                 navigate('/dashboard'); 
             }
-        return response.data;
         } catch (error) {
             console.error('Login failed:', error);
         }
@@ -53,9 +47,7 @@ export default function Login() {
         <Card className="w-full max-w-sm">
         <CardHeader>
             <CardTitle>
-                <div className="text-2xl font-bold text-center">
-                    HomeOS
-                </div>
+                <div className="text-2xl font-bold text-center">HomeOS</div>
             </CardTitle>
         </CardHeader>
         <CardContent>
@@ -74,27 +66,12 @@ export default function Login() {
                 
                 <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                    <Input 
+                
+                <PasswordInput 
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"} 
-                    className="pr-10"
                     required 
-                    />
-                    <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                    {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                    ) : (
-                        <Eye className="h-4 w-4" />
-                    )}
-                    </button>
-                </div>
+                />
                 </div>
             </div>
 
@@ -103,8 +80,7 @@ export default function Login() {
             </Button>
             </form>
         </CardContent>
-
         </Card>
     </div>
     );
-};
+}

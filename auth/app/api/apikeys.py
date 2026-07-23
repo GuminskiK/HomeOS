@@ -13,13 +13,13 @@ router = APIRouter(prefix="/apikeys", tags=["apikeys"])
 @router.post("", status_code=201)
 async def post_apikey(user: current_user, session: db_session, name: str, redis: redis_client):
 
-    return await generate_api_key_for_user(session, user.id, name, redis)
+    return await generate_api_key_for_user(session, user.user_id, name, redis)
 
 
 @router.delete("/{key_id}")
 async def delete_api_key(key_id: int, user: admin_or_owner_user, session: db_session, redis: redis_client):
 
-    return await revoke_user_api_key(session, user.id, key_id, redis)
+    return await revoke_user_api_key(session, user.user_id, key_id, redis)
 
 
 @router.get("")

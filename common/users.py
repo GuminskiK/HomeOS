@@ -2,7 +2,6 @@ import hashlib
 import json
 from typing import Optional
 from fastapi.security import APIKeyHeader
-from sqlmodel import SQLModel
 from fastapi import Depends, HTTPException, status, Request, Response
 from common.exceptions import (
     AdminNeededException, AdminOrOwnerNeededException, NoSessionAndNoAPIKey
@@ -11,11 +10,7 @@ from common.SessionData import SessionData
 import redis.asyncio as redis
 from sqlmodel.ext.asyncio.session import AsyncSession
 from uuid import UUID
-
-class CurrentUserContext(SQLModel):
-    id: UUID
-    username: str
-    is_superuser: bool
+from common.CurrentUserContext import CurrentUserContext
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -58,9 +53,14 @@ class AuthDependency:
             )
 
             return CurrentUserContext(
-                    id=session_data.user_id,
+                    session_id=session_data.session_id,
+
+                    user_id=session_data.user_id,
                     username=session_data.username,
-                    is_superuser=session_data.is_superuser
+                    is_superuser=session_data.is_superuser,
+                    is_totp_enabled=session_data.is_totp_enabled,
+
+                    avatar_url=session_data.avatar_url
             )
         
         if api_key:
@@ -71,9 +71,14 @@ class AuthDependency:
             if cached_key_data:
                 key_data = json.loads(cached_key_data)
                 return CurrentUserContext(
-                    id=key_data["id"],
+                    session_id=key_data["session_id"],
+
+                    user_id=key_data["id"],
                     username=key_data["username"],
-                    is_superuser=key_data["is_superuser"]
+                    is_superuser=key_data["is_superuser"],
+                    is_totp_enabled=key_data["is_totp_enabled"],
+
+                    avatar_url=key_data["avatar_url"]
                 )
 
         raise NoSessionAndNoAPIKey()
@@ -92,7 +97,7 @@ class AuthDependency:
             user_id: int,
             current_user: CurrentUserContext = Depends(self.get_current_session)
         ) -> CurrentUserContext:
-            if current_user.id != user_id and not current_user.is_superuser:
+            if current_user.user_id != user_id and not current_user.is_superuser:
                 raise AdminOrOwnerNeededException()
             return current_user
         return _get_current_owner_or_admin_user

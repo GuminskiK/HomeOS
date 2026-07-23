@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import json
+from fastapi.staticfiles import StaticFiles
 from sqlmodel import select
 from fastapi import FastAPI
 from app.core.config import settings
@@ -13,6 +14,9 @@ from common.logger import setup_logging
 from common.logging_middleware import StructlogMiddleware
 from app.core.config import settings
 from app.models.Users import User
+
+import os
+import shutil
 
 from app.api import auth, apikeys, two_fa, users
 
@@ -56,6 +60,9 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan, title=settings.APP_NAME, root_path="/api")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+os.makedirs("static/avatars", exist_ok=True)
 
 app.add_middleware(StructlogMiddleware)
 

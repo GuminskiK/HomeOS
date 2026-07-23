@@ -41,6 +41,8 @@ class User(UserBase, table=True):
 
     totp_secret: str | None = Field(default=None)
     is_totp_enabled: bool = Field(default=False)
+
+    avatar_url: str | None = Field(default=None)
     
     api_keys: List["APIKey"] = Relationship(back_populates="owner")
 

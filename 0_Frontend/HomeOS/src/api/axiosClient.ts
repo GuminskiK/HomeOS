@@ -1,3 +1,4 @@
+// src/api/axiosClient.ts
 import axios from 'axios';
 
 export const api = axios.create({
@@ -11,7 +12,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      window.location.href = '/login';
+      // Zamiast window.location.href, wysyłamy sygnał do aplikacji
+      window.dispatchEvent(new Event('auth:unauthorized'));
     }
     return Promise.reject(error);
   }

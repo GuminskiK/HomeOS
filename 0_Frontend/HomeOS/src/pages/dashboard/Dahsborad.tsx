@@ -1,19 +1,15 @@
 import { Button } from "@/components/ui/button.tsx"
 import { Card} from "@/components/ui/card"
 import { useNavigate } from 'react-router-dom';
-import { api } from "@/api/axiosClient";
-import { useAuth } from "@/context/AuthContext.tsx";
+import { logoutFromSession } from "@/api/auth/auth.ts";
 
 export default function Dashboard() {
 
     const navigate = useNavigate();
-    const { logout } = useAuth();
 
     const handleLogout = async () => {
         try{
-            const response = await api.post('/api/auth/logout')
-
-            logout();
+            const response = await logoutFromSession();
 
             if (response.status === 200) {
                 navigate('/');
