@@ -43,7 +43,7 @@ services:
       dockerfile: auth/Dockerfile.yaml
     container_name: homeos-auth
     ports:
-      - "8001:8000"
+      - "8001:8001"
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-homeos}:${POSTGRES_PASSWORD:-homeos_password}@postgres:5432/homeos
       REDIS_URL: redis://redis:6379/0

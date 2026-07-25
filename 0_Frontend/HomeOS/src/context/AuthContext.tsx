@@ -1,12 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../api/axiosClient';
 import { loginApi, logoutApi } from '@/api/auth/auth';
+import type { User } from '../api/auth/types'
 
-interface User {
-  username: string;
-  is_superuser: boolean;
-  is_totp_enabled: boolean;
-}
 
 interface AuthContextType {
   user: User | null;

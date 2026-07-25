@@ -22,9 +22,9 @@ export const getAllUsers = async (): Promise<AllUsersUser[]> => {
 }
 
 export const updateUser = async (userData: UserUpdateData): Promise<any> => {
-    const response = await api.put('/api/users/me', userData, {
+    const response = await api.patch('/api/users/me', userData, {
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded' 
+            'Content-Type': 'application/json' 
         }
     });
     return response.data;
@@ -32,9 +32,9 @@ export const updateUser = async (userData: UserUpdateData): Promise<any> => {
 
 export const updateUserAdmin = async (userData: UserUpdateData, userId: string): Promise<any> => {
     
-    const response = await api.put(`/api/users/${userId}`, userData, {
+    const response = await api.patch(`/api/users/${userId}`, userData, {
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded' 
+            'Content-Type': 'application/json' 
         }
     });
     return response.data;
@@ -44,10 +44,10 @@ export const uploadAvatarFile = async (file: File): Promise<any> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await api.post('/api/users/avatar/me', formData, {
+    const response = await api.post('/api/users/me/avatar', formData, {
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded' 
-        }
+            'Content-Type': undefined,
+        },
     });
     
     return response.data;

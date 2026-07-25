@@ -14,13 +14,12 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['frontend_backend'],
-    proxy: {
-      '/api': {
-        target: 'http://auth:8000', 
-        changeOrigin: true,
-        secure: false,
-      }
+    allowedHosts: ['frontend', 'localhost'],
+    watch: {
+      usePolling: true,
+    },
+    hmr: {
+      clientPort: 443,
     }
   }
 })

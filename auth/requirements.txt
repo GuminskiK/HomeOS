@@ -13,4 +13,3 @@ pillow
 structlog
 python-json-logger
 slowapi
-passlib

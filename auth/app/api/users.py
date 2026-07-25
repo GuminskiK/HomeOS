@@ -1,4 +1,6 @@
 from typing import List
+
+import redis
 from common.CurrentUserContext import CurrentUserContext
 from fastapi import APIRouter, File, UploadFile
 from uuid import UUID
@@ -11,6 +13,7 @@ from app.services.users_service import (
     remove_user,
     update_user,
     upload_avatar,
+    change_user_role
 )
 from app.core.db import db_session, redis_client
 
@@ -47,24 +50,18 @@ async def patch_user(
     current_user: CurrentUser,
 ):
 
-    user.is_superuser = False
-    is_me = True
-
-    return await update_user(redis, session, current_user, user, is_me)
+    return await update_user(redis, session, user, current_user.user_id)
 
 @router.patch("/{user_id}", response_model=UserRead)
 async def patch_user_admin(
     redis: redis_client,
     session: db_session, 
     user: UserUpdate, 
-    user_id: UUID, 
-    admin: AdminUser
+    admin: AdminUser,
+    user_id: UUID,
 ):
 
-    if UUID == admin.user_id:
-        is_me = True
-
-    return await update_user(redis, session, admin, user, is_me)
+    return await update_user(redis, session, user, user_id)
 
 @router.delete("/me", response_model=UserRead)
 async def delete_user(session: db_session, user: CurrentUser):
@@ -86,6 +83,16 @@ async def upload_avatar_route(
     file: UploadFile = File(...), 
 ):
    
-    avatar_url = await upload_avatar(redis, session, user, file)
+    result = await upload_avatar(redis, session, user, file)
+    return result
 
-    return {"avatar_url": avatar_url}
+@router.patch("/change_role/{user_id}")
+async def patch_change_user_role(
+    redis: redis_client,
+    session: db_session, 
+    user_id: UUID, 
+    is_superuser: bool,
+    admin: AdminUser
+):
+    result = await change_user_role(redis, session, user_id, is_superuser)
+    return result

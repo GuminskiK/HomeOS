@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
 import json
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import select
-from fastapi import FastAPI
+from pathlib import Path as FilePath
+from fastapi import FastAPI, Path
 from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -61,9 +63,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title=settings.APP_NAME, root_path="/api")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-os.makedirs("static/avatars", exist_ok=True)
-
 app.add_middleware(StructlogMiddleware)
 
 app.state.limiter = limiter
@@ -97,3 +96,12 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
+
+@app.get("/static/avatars/{filename}")
+async def serve_avatar(filename: str):
+    file_path = f"/app/static/avatars/{filename}"
+    
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    
+    return {"detail": "Not Found"}

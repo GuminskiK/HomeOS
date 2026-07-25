@@ -69,16 +69,16 @@ async def getSessionsByUserId(
     redis: redis.Redis,
     user_id: UUID
 ) -> list[str]:
-    session_ids = await redis.smembers(f"user_sessions:{user_id}")
+    session_ids = await redis.smembers(f"user_session:{user_id}")
     
     active_sessions = []
     
     for session_id in session_ids:
-        exists = await redis.exists(f"session_data:{session_id}")
+        exists = await redis.exists(f"session:{session_id}")
         if exists:
             active_sessions.append(session_id)
         else:
-            await redis.srem(f"user_sessions:{user_id}", session_id)
+            await redis.srem(f"user_session:{user_id}", session_id)
             
     return active_sessions
 
