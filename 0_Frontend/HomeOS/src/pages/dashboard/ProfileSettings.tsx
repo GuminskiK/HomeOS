@@ -5,48 +5,118 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/custom/PasswordInput"
 import { updateUser } from "@/api/auth/users"
+import { enable2FA, disable2FA, setup2FA } from "@/api/auth/totp" // Zakładamy osobny moduł API
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { QRCodeSVG } from "qrcode.react" // Opcjonalnie do generowania QR po stronie klienta z otpauth URI
 
-export default function ProfileSettings() {
+interface ProfileSettingsProps {
+  is_totp_enabled: boolean
+  onTotpStatusChange?: (enabled: boolean) => void
+}
+
+export default function ProfileSettings({ is_totp_enabled, onTotpStatusChange }: ProfileSettingsProps) {
   const formRef = useRef<HTMLFormElement>(null)
 
-  // Używamy stringów zamiast booleanów, by móc wyświetlać konkretne komunikaty
-  const [errors, setErrors] = useState({
-    username: "",
-    password: "",
-    confirmPassword: "",
-  })
-
-  // Stan potrzebny do śledzenia wpisywanego hasła na żywo (dla paska siły)
+  // Stany formularza profilu
+  const [errors, setErrors] = useState({ username: "", password: "", confirmPassword: "" })
   const [passwordValue, setPasswordValue] = useState("")
 
-  // Funkcja obliczająca siłę hasła (0-5)
+  // Stany procesu 2FA
+  const [isTotpEnabledState, setIsTotpEnabledState] = useState(is_totp_enabled)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [totpStep, setTotpStep] = useState<"setup" | "disable">("setup")
+  const [qrCodeUri, setQrCodeUri] = useState<string>("")
+  const [secretKey, setSecretKey] = useState<string>("")
+  const [totpCode, setTotpCode] = useState("")
+  const [isSubmitting2FA, setIsSubmitting2FA] = useState(false)
+
+  // Ocena siły hasła
   const getPasswordStrength = (pass: string) => {
     let score = 0
     if (!pass) return score
     if (pass.length >= 8) score += 1
-    if (/[a-z]/.test(pass)) score += 1 // Mała litera
-    if (/[A-Z]/.test(pass)) score += 1 // Duża litera
-    if (/[0-9]/.test(pass)) score += 1 // Cyfra
-    if (/[^a-zA-Z0-9]/.test(pass)) score += 1 // Znak specjalny
+    if (/[a-z]/.test(pass)) score += 1
+    if (/[A-Z]/.test(pass)) score += 1
+    if (/[0-9]/.test(pass)) score += 1
+    if (/[^a-zA-Z0-9]/.test(pass)) score += 1
     return score
   }
 
   const strengthScore = getPasswordStrength(passwordValue)
 
-  // Helper do określenia koloru paska na podstawie wyniku
   const getStrengthColor = (score: number) => {
     if (score === 0) return "bg-transparent"
-    if (score <= 2) return "bg-destructive" // Czerwony dla słabego
-    if (score <= 4) return "bg-yellow-500"  // Żółty dla średniego
-    return "bg-green-500"                   // Zielony dla mocnego
+    if (score <= 2) return "bg-destructive"
+    if (score <= 4) return "bg-yellow-500"
+    return "bg-green-500"
   }
 
-  const handleProfileUpdate = async (event: React.SubmitEvent<HTMLFormElement>) => {
+  // --- OBSŁUGA 2FA ---
+
+  const handleStart2FASetup = async () => {
+    try {
+      // Pobieramy secret oraz url do QR
+      const data = await setup2FA() 
+      // Oczekujemy np. { secret: "ABC...", qr_code_uri: "otpauth://totp/..." }
+      setQrCodeUri(data.qr_code_uri || data.totp_uri)
+      setSecretKey(data.secret)
+      setTotpStep("setup")
+      setTotpCode("")
+      setIsModalOpen(true)
+    } catch (error) {
+      console.error("2FA Setup failed:", error)
+      toast.error("Nie udało się wygenerować danych konfiguracji 2FA.")
+    }
+  }
+
+  const handleStart2FADisable = () => {
+    setTotpStep("disable")
+    setTotpCode("")
+    setIsModalOpen(true)
+  }
+
+  const handleConfirm2FA = async () => {
+    if (totpCode.length < 6) {
+      toast.error("Wprowadź poprawny 6-cyfrowy kod TOTP.")
+      return
+    }
+
+    setIsSubmitting2FA(true)
+
+    try {
+      if (totpStep === "setup") {
+        await enable2FA(totpCode)
+        setIsTotpEnabledState(true)
+        onTotpStatusChange?.(true)
+        toast.success("Weryfikacja dwuetapowa została pomyślnie włączona!")
+      } else {
+        await disable2FA(totpCode)
+        setIsTotpEnabledState(false)
+        onTotpStatusChange?.(false)
+        toast.success("Weryfikacja dwuetapowa została wyłączona.")
+      }
+      setIsModalOpen(false)
+    } catch (error: any) {
+      console.error("2FA Action failed:", error)
+      toast.error(error.response?.data?.detail || "Niepoprawny kod 2FA. Spróbuj ponownie.")
+    } finally {
+      setIsSubmitting2FA(false)
+    }
+  }
+
+  // --- UPDATE PROFILU ---
+
+  const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    
-    // Reset błędów
     setErrors({ username: "", password: "", confirmPassword: "" })
 
     const formData = new FormData(event.currentTarget)
@@ -54,7 +124,6 @@ export default function ProfileSettings() {
     const password = formData.get("password") as string
     const confirmPassword = formData.get("confirm-password") as string
 
-    // Jeśli nic nie wpisano, nie wykonujemy zapytania
     if (!username && !password) {
       toast.info("Nie wprowadzono żadnych zmian.")
       return
@@ -63,10 +132,8 @@ export default function ProfileSettings() {
     let hasError = false
     const newErrors = { username: "", password: "", confirmPassword: "" }
 
-    // WALIDACJA USERNAME (tylko jeśli zostało wpisane)
     if (username) {
-      const usernameRegex = /^[a-zA-Z0-9]+$/
-      if (!usernameRegex.test(username)) {
+      if (!/^[a-zA-Z0-9]+$/.test(username)) {
         newErrors.username = "Nazwa użytkownika może zawierać tylko litery i cyfry."
         hasError = true
       }
@@ -76,45 +143,35 @@ export default function ProfileSettings() {
       }
     }
 
-    // WALIDACJA HASŁA (tylko jeśli zostało wpisane)
     if (password) {
       if (strengthScore < 5) {
         newErrors.password = "Hasło nie spełnia wszystkich wymagań bezpieczeństwa."
         hasError = true
       }
-      
       if (password !== confirmPassword) {
         newErrors.confirmPassword = "Hasła nie są identyczne."
         hasError = true
       }
     }
 
-    // Jeśli wystąpiły błędy, zatrzymujemy wysyłkę i pokazujemy komunikaty
     if (hasError) {
       setErrors(newErrors)
       if (newErrors.confirmPassword) toast.error(newErrors.confirmPassword)
       return
     }
 
-    // Przygotowanie payloadu tylko z wypełnionymi danymi
     const payload: { username?: string; password?: string } = {}
     if (username) payload.username = username
     if (password) payload.password = password
 
-    // Wywołanie API (załóżmy, że updateUser przyjmuje częściowy obiekt)
-    const updatePromise = updateUser(payload)
-
-    toast.promise(updatePromise, {
+    toast.promise(updateUser(payload), {
       loading: "Aktualizowanie profilu...",
       success: () => {
         formRef.current?.reset()
-        setPasswordValue("") // Reset paska siły hasła
+        setPasswordValue("")
         return "Profil zaktualizowany pomyślnie."
       },
-      error: (error) => {
-        console.error("Profile update failed:", error)
-        return "Nie udało się zaktualizować profilu."
-      },
+      error: () => "Nie udało się zaktualizować profilu.",
     })
   }
 
@@ -127,8 +184,6 @@ export default function ProfileSettings() {
     <div className="flex flex-col m-10 gap-10">
       <form ref={formRef} onSubmit={handleProfileUpdate} onReset={handleReset}>
         <FieldGroup className="space-y-6">
-          
-          {/* USERNAME */}
           <Field>
             <FieldLabel htmlFor="username">Name</FieldLabel>
             <Input
@@ -137,12 +192,9 @@ export default function ProfileSettings() {
               placeholder="Jordan Lee"
               className={cn("w-full", errors.username && "border-destructive focus-visible:ring-destructive")}
             />
-            {errors.username && (
-              <p className="text-sm text-destructive mt-1">{errors.username}</p>
-            )}
+            {errors.username && <p className="text-sm text-destructive mt-1">{errors.username}</p>}
           </Field>
-          
-          {/* PASSWORD */}
+
           <Field>
             <FieldLabel htmlFor="password">New Password</FieldLabel>
             <PasswordInput
@@ -151,14 +203,12 @@ export default function ProfileSettings() {
               value={passwordValue}
               onChange={(e) => setPasswordValue(e.target.value)}
               className={cn(errors.password && "border-destructive focus-visible:ring-destructive")}
-              // Usunięto 'required', aby hasło było opcjonalne
             />
-            
-            {/* Pasek siły hasła i lista wymagań */}
+
             {passwordValue && (
               <div className="mt-2 flex flex-col gap-2">
                 <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className={cn("h-full transition-all duration-300 ease-out", getStrengthColor(strengthScore))}
                     style={{ width: `${(strengthScore / 5) * 100}%` }}
                   />
@@ -172,43 +222,107 @@ export default function ProfileSettings() {
                 </ul>
               </div>
             )}
-            
-            {errors.password && (
-              <p className="text-sm text-destructive mt-1">{errors.password}</p>
-            )}
+
+            {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
           </Field>
-          
-          {/* CONFIRM PASSWORD */}
+
           <Field>
             <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
             <PasswordInput
               id="confirm-password"
               name="confirm-password"
               className={cn(errors.confirmPassword && "border-destructive focus-visible:ring-destructive")}
-              disabled={!passwordValue} // Zablokowane, jeśli nie wpisano nowego hasła
+              disabled={!passwordValue}
             />
-            {errors.confirmPassword && (
-              <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
-            )}
+            {errors.confirmPassword && <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>}
           </Field>
 
-          {/* PRZYCISKI */}
           <Field orientation="horizontal" className="flex gap-4">
             <Button type="reset" variant="outline">
               Reset
             </Button>
             <Button type="submit">Submit</Button>
           </Field>
-
         </FieldGroup>
       </form>
 
+      {/* SEKCJA KARTY 2FA */}
       <div className="flex flex-row gap-4 justify-start items-center">
-        <Card className="flex flex-col items-center p-4 w-full gap-4">
-          <div className="font-medium">TwoFactor Authentication: Enabled</div>
-          <Button variant="secondary" className="w-1/2">Disable</Button>
+        <Card className="flex flex-col items-center p-6 w-full gap-4 max-w-md">
+          <div className="font-medium text-center">
+            Two-Factor Authentication (2FA):
+            <span className={isTotpEnabledState ? " text-green-600 font-semibold" : " text-destructive font-semibold"}>
+              {isTotpEnabledState ? " Włączone" : " Wyłączone"}
+            </span>
+          </div>
+
+          <Button
+            variant={isTotpEnabledState ? "destructive" : "default"}
+            onClick={isTotpEnabledState ? handleStart2FADisable : handleStart2FASetup}
+            className="w-full"
+          >
+            {isTotpEnabledState ? "Wyłącz 2FA" : "Włącz 2FA"}
+          </Button>
         </Card>
       </div>
+
+      {/* MODAL / DIALOG DLA AKCJI 2FA */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {totpStep === "setup" ? "Konfiguracja Weryfikacji Dwuetapowej" : "Wyłączanie 2FA"}
+            </DialogTitle>
+            <DialogDescription>
+              {totpStep === "setup"
+                ? "Zeskanuj kod QR w aplikacji uwierzytelniającej (np. Google Authenticator), a następnie wprowadź wygenerowany kod."
+                : "Aby potwierdzić wyłączenie weryfikacji dwuetapowej, wprowadź aktualny kod z aplikacji."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center gap-4 py-4">
+            {totpStep === "setup" && qrCodeUri && (
+              <div className="flex flex-col items-center gap-2 border p-4 rounded-lg bg-white">
+                <QRCodeSVG value={qrCodeUri} size={180} />
+                {secretKey && (
+                  <p className="text-xs text-muted-foreground font-mono mt-2 break-all max-w-xs text-center">
+                    Klucz opcjonalny: {secretKey}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <Field className="w-full">
+              <FieldLabel htmlFor="totp-code" className="text-center block">
+                Kod weryfikacyjny TOTP
+              </FieldLabel>
+              <Input
+                id="totp-code"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="123456"
+                className="text-center text-lg tracking-widest font-mono"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+              />
+            </Field>
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Anuluj
+            </Button>
+            <Button
+              onClick={handleConfirm2FA}
+              disabled={totpCode.length !== 6 || isSubmitting2FA}
+              variant={totpStep === "disable" ? "destructive" : "default"}
+            >
+              {isSubmitting2FA ? "Weryfikacja..." : totpStep === "setup" ? "Włącz 2FA" : "Wyłącz 2FA"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

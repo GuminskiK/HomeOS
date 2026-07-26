@@ -7,7 +7,7 @@ from app.services.two_fa_service import (
     verify_and_disable,
     verify_and_enable,
 )
-from app.core.db import db_session
+from app.core.db import db_session, redis_client
 
 router = APIRouter(prefix="/2fa", tags=["2fa"])
 
@@ -19,20 +19,21 @@ async def setup_2fa(user: CurrentUser, session: db_session):
 
     return await generate_setup_data(user, session)
 
-
 @router.post("/enable")
 async def enable_2fa(
     user: CurrentUser, 
     session: db_session, 
+    redis: redis_client,
     code: str = Body(..., embed=True)
 ):
-    return await verify_and_enable(user, session, code)
+    return await verify_and_enable(user, redis, session, code)
 
 @router.post("/disable")
 async def disable_2fa(
     user: CurrentUser,
     session: db_session,
+    redis: redis_client,
     code: str = Body(..., embed=True)
 ):
 
-    return await verify_and_disable(user, session, code)
+    return await verify_and_disable(user, redis, session, code)

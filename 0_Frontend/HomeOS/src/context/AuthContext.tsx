@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../api/axiosClient';
-import { loginApi, logoutApi } from '@/api/auth/auth';
+import { loginApi, loginMfaApi, logoutApi } from '@/api/auth/auth';
 import type { User } from '../api/auth/types'
 
 
@@ -8,7 +8,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<any>;
+  login: (username: string, password: string, mfaCode?: string) => Promise<any>;
+  loginMfa: (mfaCode: string, mfaToken: string) => Promise<any>;
   logout: () => Promise<boolean>;
   updateUser: (updatedData: User) => void;
 }
@@ -50,10 +51,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const data = await loginApi(username, password);
-    await fetchUserProfile();
-    return data;
+    const response = await loginApi(username, password);
+
+    if ( response.status === 200) {
+      await fetchUserProfile();
+    }
+    return response;
   }, [fetchUserProfile]);
+
+
+  const loginMfa = useCallback(async (mfaCode: string, mfaToken: string) => {
+    const response = await loginMfaApi(mfaCode, mfaToken);
+    await fetchUserProfile();
+    return response;
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -78,9 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: !!user,
     isLoading,
     login,
+    loginMfa,
     logout,
     updateUser
-  }), [user, isLoading, login, logout, updateUser]);
+  }), [user, isLoading, login, loginMfa, logout, updateUser]);
 
   return (
     <AuthContext.Provider value={contextValue}>

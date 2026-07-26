@@ -74,7 +74,7 @@ async def update_user(
     
     if user_update.plain_password:
         hashed = get_password_hash(user_update.plain_password)
-        user_update.hashed_password = hashed
+        user.hashed_password = hashed
     
     update_data = user_update.model_dump(exclude_unset=True, exclude={"plain_password"})
     for key, value in update_data.items():

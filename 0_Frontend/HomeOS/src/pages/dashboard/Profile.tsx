@@ -106,7 +106,7 @@ export default function Profile() {
             
             <div className="flex [flex:7] flex-col gap-6 h-full">
                 <Card className="flex-[3] flex h-full p-6">
-                    {activeTab === 'settings' && <ProfileSettings />}
+                    {activeTab === 'settings' && <ProfileSettings is_totp_enabled={profile?.is_totp_enabled || false} />}
                     {activeTab === 'security' && <ProfileSecurity />}
                     {activeTab === 'apikeys' && <ProfileAPIKeys />}
                     {activeTab === 'preferences' && (

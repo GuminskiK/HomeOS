@@ -1,8 +1,4 @@
-import base64
-import io
-
 import pyotp
-import qrcode
 
 from app.core.config import settings
 from app.core.exceptions import (
@@ -11,11 +7,14 @@ from app.core.exceptions import (
     TwoFaNotEnabledException,
     TwoFaNotInitiatedException,
     TwoFaSecretMissingException,
+    UserNotFoundException,
 )
 from sqlmodel.ext.asyncio.session import AsyncSession
+from app.services.session_service import getSessionsByUserId, updateSession
 from common.logger import get_logger
 from common.users import CurrentUserContext
 from app.utils.users_utils import get_user_by_id
+import redis.asyncio as redis
 
 logger = get_logger(__name__)
 
@@ -26,7 +25,7 @@ async def generate_setup_data(user_context: CurrentUserContext, session: AsyncSe
     
     if not user:
         logger.error("user_not_found", user_id=str(user_context.user_id))
-        raise ValueError("User not found")
+        raise UserNotFoundException()
 
     if user.is_totp_enabled:
         logger.info("2fa_setup_already_enabled", user_id=str(user.id))
@@ -38,25 +37,24 @@ async def generate_setup_data(user_context: CurrentUserContext, session: AsyncSe
         name=user.username, issuer_name=settings.APP_NAME
     )
 
-    qr = qrcode.make(provisioning_uri)
-    img_byte_arr = io.BytesIO()
-    qr.save(img_byte_arr)
-    qr_b64 = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
+    user.totp_secret = secret
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
 
-    logger.info("2fa_setup_data_generated", user_id=str(user.id))
     return {
-        "secret": secret,
-        "qr_code_base64": f"data:image/png;base64,{qr_b64}",
-    }
+            "secret": user.totp_secret,
+            "qr_code_uri": provisioning_uri
+        }
 
 
-async def verify_and_enable(user_context: CurrentUserContext, session: AsyncSession, code: str):
+async def verify_and_enable(user_context: CurrentUserContext, redis: redis.Redis, session: AsyncSession, code: str):
 
     user = await get_user_by_id(session, user_context.user_id)
 
     if not user:
         logger.error("user_not_found", user_id=str(user_context.user_id))
-        raise ValueError("User not found")
+        raise UserNotFoundException()
 
     if user.is_totp_enabled:
         raise TwoFaAlreadyEnabledException()
@@ -72,18 +70,22 @@ async def verify_and_enable(user_context: CurrentUserContext, session: AsyncSess
     session.add(user)
     await session.commit()
 
+    session_ids = await getSessionsByUserId(redis, user_context.user_id)
+    for id in session_ids:
+        await updateSession(redis, id, {"is_totp_enabled": True})
+
     logger.info("2fa_enabled", user_id=str(user.id))
 
     return {"message": "2FA successfully enabled"}
 
 
-async def verify_and_disable(user_context: CurrentUserContext, session: AsyncSession, code: str):
+async def verify_and_disable(user_context: CurrentUserContext, redis: redis.Redis, session: AsyncSession, code: str):
 
     user = await get_user_by_id(session, user_context.user_id)
 
     if not user:
         logger.error("user_not_found", user_id=str(user_context.user_id))
-        raise ValueError("User not found")
+        raise UserNotFoundException()
 
     if not user.is_totp_enabled:
         raise TwoFaNotEnabledException()
@@ -100,6 +102,10 @@ async def verify_and_disable(user_context: CurrentUserContext, session: AsyncSes
     user.totp_secret = None
     session.add(user)
     await session.commit()
+
+    session_ids = await getSessionsByUserId(redis, user_context.user_id)
+    for id in session_ids:
+        await updateSession(redis, id, {"is_totp_enabled": False})
 
     logger.info("2fa_disabled", user_id=str(user.id))
 
