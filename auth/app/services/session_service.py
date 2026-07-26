@@ -83,6 +83,19 @@ async def getSessionsByUserId(
     return active_sessions
 
 
+async def getSessionDataByUserId(
+    redis: redis.Redis,
+    user_id: UUID
+) -> list[SessionData]:
+    session_ids = await getSessionsByUserId(redis, user_id)
+    session_data_list = []
+    for session_id in session_ids:
+        session_data_raw = await redis.get(f"session:{session_id}")
+        if session_data_raw:
+            session_data = SessionData(**json.loads(session_data_raw))
+            session_data_list.append(session_data)
+    return session_data_list
+
 async def updateSession(
     redis: redis.Redis,
     session_id: str,

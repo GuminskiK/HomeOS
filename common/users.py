@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi.security import APIKeyHeader
 from fastapi import Depends, HTTPException, status, Request, Response
 from common.exceptions import (
-    AdminNeededException, AdminOrOwnerNeededException, NoSessionAndNoAPIKey
+    AdminNeededException, CurrentUserNeededException, NoSessionAndNoAPIKey
 )
 from common.SessionData import SessionData
 import redis.asyncio as redis
@@ -90,13 +90,3 @@ class AuthDependency:
                 raise AdminNeededException()
             return current_user
         return _get_current_admin_user
-
-    def get_current_owner_or_admin_session(self):
-        async def _get_current_owner_or_admin_user(
-            user_id: UUID,
-            current_user: CurrentUserContext = Depends(self.get_current_session)
-        ) -> CurrentUserContext:
-            if current_user.user_id != user_id and not current_user.is_superuser:
-                raise AdminOrOwnerNeededException()
-            return current_user
-        return _get_current_owner_or_admin_user

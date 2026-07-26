@@ -17,4 +17,3 @@ auth_dependency = AuthDependency(
 
 CurrentUser = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_session)]
 AdminUser = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_admin_session())]
-AdminOrOwner = Annotated[CurrentUserContext, Depends(auth_dependency.get_current_owner_or_admin_session())]

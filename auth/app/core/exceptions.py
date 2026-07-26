@@ -27,7 +27,9 @@ class AdminForibiddenFromCreatingApiKeyException(ForbiddenException):
     def __init__(self, detail: str = "Not authorized to perform this action"):
         super().__init__(detail="Admin is forbidden from creating api keys")
 
-
+class CurrentUserRequiredException(ForbiddenException):
+    def __init__(self, detail: str = "Not authorized to perform this action"):
+        super().__init__(detail="Admin or owner required to perform this action")
 ## BadRequestException ##
 
 

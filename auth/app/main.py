@@ -20,7 +20,7 @@ from app.models.Users import User
 import os
 import shutil
 
-from app.api import auth, apikeys, two_fa, users
+from app.api import auth, apikeys, two_fa, users, sessions
 
 setup_logging(json_logs=False, log_level="INFO")
 
@@ -73,6 +73,7 @@ app.include_router(auth.router)
 app.include_router(two_fa.router)
 app.include_router(apikeys.router)
 app.include_router(users.router)
+app.include_router(sessions.router)
 
 origins = [
     "http://localhost.tiangolo.com",
