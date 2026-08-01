@@ -1,5 +1,3 @@
-"use client" // Wymagane w Next.js App Router dla useState/useEffect
-
 import { useState, useEffect } from "react"
 import {
   Table,
@@ -11,38 +9,45 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import type { Session } from "@/api/auth/types"
-import {getSessions, deleteSession} from "@/api/auth/sessions"
+import {getUserSessions, deleteSession} from "@/api/auth/sessions"
+import { useParams } from 'react-router-dom';
 
 export default function ProfileSecurity() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+    const [sessions, setSessions] = useState<Session[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { id } = useParams();
 
-  useEffect(() => {
-    fetchSessions()
-  }, []);
+    useEffect(() => {
+        fetchSessions()
+    }, [id]);
 
-  const fetchSessions = async () => {
-    try {
-      const response = await getSessions();
-      setSessions(response);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const fetchSessions = async () => {
+        if (!id) {
+            setIsLoading(false);
+            return; 
+        }
 
-  const handleLogout = async (sessionId: string) => {
-    try {
-      await deleteSession(sessionId);
+        try {
+            const response = await getUserSessions(id);
+            setSessions(response);
+            } catch (error) {
+            console.error(error);
+            } finally {
+            setIsLoading(false);
+            }
+    };
 
-      setSessions((prevSessions) => 
-        prevSessions.filter((session) => session.session_id !== sessionId)
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    const handleLogout = async (sessionId: string) => {
+        try {
+        await deleteSession(sessionId);
+
+        setSessions((prevSessions) => 
+            prevSessions.filter((session) => session.session_id !== sessionId)
+        );
+        } catch (error) {
+        console.error(error);
+        }
+    };
 
 return (
     // Usunąłem m-10, bo komponent jest już wewnątrz <Card> z paddingiem, więc lepiej użyć pełnej szerokości

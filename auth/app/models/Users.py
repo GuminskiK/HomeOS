@@ -58,6 +58,8 @@ class UserCreate(UserBase):
 
 class UserRead(UserBase):
     id: UUID
+    username: str
+    avatar_url: Optional[str]
     is_superuser: bool
     is_banned: bool
     is_totp_enabled: bool

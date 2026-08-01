@@ -16,7 +16,7 @@ from common.logger import setup_logging
 from common.logging_middleware import StructlogMiddleware
 from app.core.config import settings
 from app.models.Users import User
-
+from sqlalchemy.orm import selectinload
 import os
 import shutil
 
@@ -26,29 +26,35 @@ setup_logging(json_logs=False, log_level="INFO")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    
     from app.core.db import db_deps
-
-    AsyncSessionLocal = db_deps.AsyncSessionLocal()
-
-    async with AsyncSessionLocal as session:
-        query = select(User).where(User.api_keys != None)
-        result = await session.exec(query)
-        users = result.all()
-        for user in users:
-            for api_key in user.api_keys:
-                await db_deps.get_redis().set(f"apikey:{api_key.hashed_key}", json.dumps({"id": api_key.user_id, "username": user.username, "is_superuser": user.is_superuser}))
+    from app.utils.auth_utils import get_password_hash
     
-    print("Zsynchronizowano klucze API z Redis")
-
-    async with AsyncSessionLocal as session:
-        query = select(User)
+    # Używamy nawiasów bezpośrednio przy bloku `with`, aby za każdym razem tworzyć nową sesję.
+    # W tym wypadku wystarczy nam jedna, złączona sesja dla obu operacji.
+    async with db_deps.AsyncSessionLocal() as session:
+        
+        # --- 1. SYNCHRONIZACJA KLUCZY API Z REDIS ---
+        # Dodajemy .options(selectinload(...)), aby pobrać klucze w tym samym zapytaniu!
+        query = select(User).options(selectinload(User.api_keys))
         result = await session.exec(query)
-        users = result.all()
-    
-        if not users:
-            from app.utils.auth_utils import get_password_hash
+        users_with_keys = result.unique().all() # .unique() zabezpiecza przed duplikatami przy złączeniach
+        
+        for user in users_with_keys:
+            if user.api_keys: # Upewniamy się, że relacja nie jest pusta
+                for api_key in user.api_keys:
+                    await db_deps.get_redis().set(
+                        f"apikey:{api_key.hashed_key}", 
+                        json.dumps({"id": str(api_key.user_id), "username": user.username, "is_superuser": user.is_superuser})
+                    )
+        
+        print("Zsynchronizowano klucze API z Redis")
 
+        # --- 2. TWORZENIE DOMYŚLNEGO ADMINA ---
+        query_users = select(User)
+        result_users = await session.exec(query_users)
+        all_users = result_users.all()
+    
+        if not all_users:
             hashed_password = get_password_hash(settings.ADMIN_PASSWORD)
             admin_user = User(
                 username=settings.ADMIN_USERNAME,
@@ -58,7 +64,7 @@ async def lifespan(app: FastAPI):
             session.add(admin_user)
             await session.commit()
             print("Utworzono domyślnego użytkownika administratora")
-    
+            
     yield
 
 app = FastAPI(lifespan=lifespan, title=settings.APP_NAME, root_path="/api")

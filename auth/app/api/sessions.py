@@ -5,8 +5,9 @@ from app.services.session_service import (
     deleteSession
 )
 from app.core.exceptions import CurrentUserRequiredException
-from app.core.user import CurrentUser
+from app.core.user import CurrentUser, AdminUser
 from app.core.db import redis_client
+from uuid import UUID
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -14,6 +15,11 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 async def get_sessions_me (user: CurrentUser, redis: redis_client):
 
     return await getSessionDataByUserId(redis, user.user_id)
+
+@router.get("/{user_id}")
+async def get_sessions_by_user_id (user_id: UUID, admin: AdminUser, redis: redis_client):
+
+    return await getSessionDataByUserId(redis, user_id)
 
 @router.delete("/{session_id}")
 async def delete_session_by_id (user: CurrentUser, session_id: str, redis: redis_client):

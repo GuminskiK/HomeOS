@@ -17,14 +17,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { QRCodeSVG } from "qrcode.react" // Opcjonalnie do generowania QR po stronie klienta z otpauth URI
+import { useAuth } from "@/context/AuthContext"
 
-interface ProfileSettingsProps {
-  is_totp_enabled: boolean
-  onTotpStatusChange?: (enabled: boolean) => void
-}
-
-export default function ProfileSettings({ is_totp_enabled, onTotpStatusChange }: ProfileSettingsProps) {
+export default function ProfileSettings() {
   const formRef = useRef<HTMLFormElement>(null)
+  const { user } = useAuth();
+  const is_totp_enabled = user?.is_totp_enabled || false;
 
   // Stany formularza profilu
   const [errors, setErrors] = useState({ username: "", password: "", confirmPassword: "" })
@@ -96,12 +94,10 @@ export default function ProfileSettings({ is_totp_enabled, onTotpStatusChange }:
       if (totpStep === "setup") {
         await enable2FA(totpCode)
         setIsTotpEnabledState(true)
-        onTotpStatusChange?.(true)
         toast.success("Weryfikacja dwuetapowa została pomyślnie włączona!")
       } else {
         await disable2FA(totpCode)
         setIsTotpEnabledState(false)
-        onTotpStatusChange?.(false)
         toast.success("Weryfikacja dwuetapowa została wyłączona.")
       }
       setIsModalOpen(false)
@@ -183,7 +179,7 @@ export default function ProfileSettings({ is_totp_enabled, onTotpStatusChange }:
   return (
     <div className="flex flex-col m-10 gap-10">
       <form ref={formRef} onSubmit={handleProfileUpdate} onReset={handleReset}>
-        <FieldGroup className="space-y-6">
+        <FieldGroup className="space-y-2">
           <Field>
             <FieldLabel htmlFor="username">Name</FieldLabel>
             <Input
@@ -248,7 +244,8 @@ export default function ProfileSettings({ is_totp_enabled, onTotpStatusChange }:
 
       {/* SEKCJA KARTY 2FA */}
       <div className="flex flex-row gap-4 justify-start items-center">
-        <Card className="flex flex-col items-center p-6 w-full gap-4 max-w-md">
+        {/* Usunięto max-w-md i mx-w-full */}
+        <Card className="flex flex-col items-center w-full gap-4">
           <div className="font-medium text-center">
             Two-Factor Authentication (2FA):
             <span className={isTotpEnabledState ? " text-green-600 font-semibold" : " text-destructive font-semibold"}>

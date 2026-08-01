@@ -25,7 +25,7 @@ def _hash_api_key(api_key: str) -> str:
 
 async def generate_api_key_for_user(
     session: AsyncSession, user_id: UUID, name: str, redis: redis.Redis
-) -> str:
+):
     key = secrets.token_urlsafe(32)
     hashed = _hash_api_key(key)
     statement = select(User).where(User.id == user_id)
@@ -40,13 +40,14 @@ async def generate_api_key_for_user(
     session.add(apikey)
     await session.commit()
 
-    await redis.set(f"apikey:{hashed}", json.dumps({"id": user.id, "username": user.username, "is_superuser": user.is_superuser}))
+    await redis.set(f"apikey:{hashed}", json.dumps({"id": str(user.id), "username": user.username, "is_superuser": user.is_superuser}))
 
     logger.info("api_key_saved_to_db", user_id=user_id)
-    return key
+    return {"id": apikey.id, "name": apikey.name, "key_hint": apikey.key_hint, "created_at": apikey.created_at, "key": key}
 
 
-async def revoke_user_api_key(session: AsyncSession, user_id: UUID, key_id: int, redis: redis.Redis) -> None:
+
+async def revoke_user_api_key(session: AsyncSession, user_id: UUID, key_id: UUID, redis: redis.Redis) -> None:
     result = await session.exec(
         select(APIKey).where(APIKey.user_id == user_id, APIKey.id == key_id)
     )
@@ -80,6 +81,16 @@ async def fetch_user_apikeys(user: CurrentUserContext, session: AsyncSession):
     result = await session.exec(select(APIKey).where(APIKey.user_id == user.user_id))
     apikeys = result.all()
     logger.info("user_apikeys_fetched", user_id=str(user.user_id), key_count=len(apikeys))
+    return [
+        {"id": k.id, "name": k.name, "key_hint": k.key_hint, "created_at": k.created_at}
+        for k in apikeys
+    ]
+
+
+async def fetch_user_apikeys_by_id(user_id: UUID, session: AsyncSession):
+    result = await session.exec(select(APIKey).where(APIKey.user_id == user_id))
+    apikeys = result.all()
+    logger.info("user_apikeys_fetched", user_id=str(user_id), key_count=len(apikeys))
     return [
         {"id": k.id, "name": k.name, "key_hint": k.key_hint, "created_at": k.created_at}
         for k in apikeys

@@ -1,62 +1,75 @@
 import { Button } from "@/components/ui/button.tsx"
 import { Card, CardTitle, CardFooter, CardContent} from "@/components/ui/card"
-import { useNavigate } from 'react-router-dom';
-import { api } from "@/api/axiosClient";
-import { useState } from "react";
 import ManageUsers from "./ManageUsers";
-
+import { useAuth } from "@/context/AuthContext";
+import { useState, useRef } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 type Tab =  'manage_users' | 'logs';
 
 export default function AdminPanel() {
-
+    const { user: profile, updateUser } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const isActive = (path: string) => location.pathname.includes(path);
 
-    const [activeTab, setActiveTab] = useState<Tab>('manage_users');
+
+    const getAvatarSrc = (url: string) => {
+        return `${url}?t=${Date.now()}`;
+    };
 
     return(
-        <div className="w-full h-screen flex justify-center items-center gap-12 p-8 box-border">
-        
+        <div className="w-full max-w-7xl mx-auto h-screen flex justify-center items-center gap-8 p-8 box-border">
+            
+            {/* LEWY PANEL - SZTYWNA SZEROKOŚĆ (np. 300px) */}
+            {/* shrink-0 zapobiega zgniataniu panelu przez sąsiednie elementy */}
+            <div className="w-[300px] shrink-0 flex flex-col gap-6 h-full py-10">
+                <Card className="flex flex-col items-center h-full">
+                    <div className="flex flex-col items-center w-full">
+                                                <div 
+                            className={`w-32 h-32 bg-gray-300 mt-10 rounded-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center relative`}
+                        >
 
-            <div className="flex [flex:3] flex-col gap-6 h-full">
-                <Card className="flex items-center h-full">
-                    <div>
-                        <div className="w-32 h-32 bg-gray-300 mt-10 rounded-full"></div>
-                        <CardTitle className="text-lg font-semibold mt-5">Name</CardTitle>
+                            {profile?.avatar_url ? (
+                                <img 
+                                    src={getAvatarSrc(profile.avatar_url)} 
+                                    alt={`${profile.username} avatar`} 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-gray-500 text-sm">Brak zdjęcia</span>
+                            )}
+                        </div>
+
+                        {/* Nazwa użytkownika */}
+                        
+                        <CardTitle className="text-lg font-semibold mt-5 mb-5">
+                            {profile?.username || "Nieznany"}
+                        </CardTitle>
                     </div>
-                    <CardContent className="flex flex-col gap-2 w-full h-f border-t border-gray-600 p-4">
+
+                    <CardContent className="flex flex-col gap-2 w-full border-t border-gray-600 p-4">
                         <Button 
-                            variant={activeTab === 'manage_users' ? 'default' : 'outline'} 
-                            onClick={() => setActiveTab('manage_users')}
+                            variant={isActive('manage_users') ? 'default' : 'outline'} 
+                            onClick={() => navigate('/admin/manage_users')}
                         >
                             Manage Users
                         </Button>
                         <Button 
-                            variant={activeTab === 'logs' ? 'default' : 'outline'} 
-                            onClick={() => setActiveTab('logs')}
+                            variant={isActive('logs') ? 'default' : 'outline'} 
+                            onClick={() => navigate('/admin/logs')}
                         >
                             Logs
                         </Button>
                     </CardContent>
                 </Card>
-                
             </div>
             
-            <div className="flex [flex:7] flex-col gap-6 h-full">
-                <Card className="flex-[3] flex h-full">
-
-                    {activeTab === 'manage_users' && (
-                        <ManageUsers />
-                    )}
-                    {activeTab === 'logs' && (
-                        <div>
-                            <h2 className="text-2xl font-bold mb-4">Logs</h2>
-                            <p className="text-gray-600">TODO - Future implementation</p>
-                        </div>
-                    )}
+            <div className="flex-1 min-w-0 flex flex-col gap-6 h-full py-10">
+                <Card className="flex flex-col h-full p-6 overflow-hidden">
+                    <Outlet />
                 </Card> 
             </div>
-
         </div>
     )
 }

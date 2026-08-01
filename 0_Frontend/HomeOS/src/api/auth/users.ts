@@ -1,22 +1,22 @@
 import { api } from '../axiosClient';
-import type { AllUsersUser, UserProfile, UserCreateData, UserUpdateData } from './types';
+import type { UserReadData, User, UserCreateData, UserUpdateData } from './types';
 
 
 export const createUser = async (userData: UserCreateData): Promise<any> => {
     const response = await api.post('/api/users', userData, {
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded' 
+            'Content-Type': 'application/json' 
         }
     });
     return response.data;
 };
 
-export const getUserProfile = async (userId: string): Promise<UserProfile> => {
+export const getUserProfile = async (userId: string): Promise<User> => {
     const response = await api.get(`/api/users/${userId}`);
     return response.data;
 };
 
-export const getAllUsers = async (): Promise<AllUsersUser[]> => {
+export const getAllUsers = async (): Promise<UserReadData[]> => {
     const response = await api.get('/api/users');
     return response.data;
 }
