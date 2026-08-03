@@ -12,7 +12,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY common common
 
-COPY auth/requirements.txt .
+COPY AB_Auth/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 
@@ -34,7 +34,7 @@ USER appuser
 
 COPY --chown=appuser:appuser static static
 COPY --chown=appuser:appuser common common
-COPY --chown=appuser:appuser auth/app app
+COPY --chown=appuser:appuser AB_Auth/app app
 
 EXPOSE 8001
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
