@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+sqlmodel[asyncio]
+asyncpg
+httpx
+pydantic-settings
+redis
+structlog
+python-json-logger
+slowapi
+psutil
+aiodocker
