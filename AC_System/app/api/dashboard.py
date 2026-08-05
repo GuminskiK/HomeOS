@@ -15,12 +15,7 @@ router = APIRouter(prefix="/dashboard", tags=["System Dashboard"])
 @router.get("/")
 def get_dashboard(user: AdminUser):
     
-    metrics = get_system_metrics()
-    return {
-        "status": "success",
-        "timestamp": metrics["timestamp"] if "timestamp" in metrics else None, 
-        "data": metrics
-    }
+    return get_system_metrics()
 
 @router.get("/logs")
 async def get_system_container_logs(

@@ -10,3 +10,4 @@ python-json-logger
 slowapi
 psutil
 aiodocker
+alembic

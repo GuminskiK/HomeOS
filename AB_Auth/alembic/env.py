@@ -11,6 +11,7 @@ from sqlmodel import SQLModel
 
 from auth.app.models.Users import User
 from auth.app.models.APIKeys import APIKey
+from system.app.models.logs import SystemContainerLog
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

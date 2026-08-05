@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 setup_logging(json_logs=False, log_level="INFO")
 
 
-app = FastAPI(title=settings.APP_NAME, root_path="/api", lifespan=lifespan)
+app = FastAPI(title=settings.APP_NAME, root_path="/system", lifespan=lifespan)
 
 app.add_middleware(StructlogMiddleware)
 
@@ -38,7 +38,6 @@ app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(containers_router)
 app.include_router(dashboard_router)
-app.include_router(containers_router)
 
 origins = [
     "http://localhost.tiangolo.com",

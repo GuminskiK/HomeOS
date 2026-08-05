@@ -3,19 +3,21 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from "./pages/auth/Login.tsx"
 import Hello from "./pages/auth/Hello.tsx"
 import Dashboard from "./pages/dashboard/Dahsborad.tsx"
-import AdminPanel from "./pages/dashboard/AdminPanel.tsx"
-import Profile from "./pages/dashboard/Profile.tsx"
+import AdminPanel from "./pages/dashboard/Admin/AdminPanel.tsx"
+import Profile from "./pages/dashboard/Profile/Profile.tsx"
 import { ProtectedRoute } from './components/ProtectedRoute.tsx';
 import {AuthProvider} from './context/AuthContext.tsx';
-import ProfileAPIKeys from './pages/dashboard/ProfileAPIKeys.tsx';
-import ProfileSecurity from './pages/dashboard/ProfileSecurity.tsx';
-import ProfileSettings from './pages/dashboard/ProfileSettings.tsx';
-import ManageUsers from './pages/dashboard/ManageUsers.tsx';
-import UserProfile from './pages/dashboard/UserProfile.tsx';
-import UserSettings from './pages/dashboard/UserSettings.tsx';
-import UserSecurity from './pages/dashboard/UserSecurity.tsx';
-import UserAPIKeys from './pages/dashboard/UserAPIKeys.tsx';
+import ProfileAPIKeys from './pages/dashboard/Profile/ProfileAPIKeys.tsx';
+import ProfileSecurity from './pages/dashboard/Profile/ProfileSecurity.tsx';
+import ProfileSettings from './pages/dashboard/Profile/ProfileSettings.tsx';
+import ManageUsers from './pages/dashboard/Admin/ManageUsers.tsx';
+import UserProfile from './pages/dashboard/Admin/UserProfile.tsx';
+import UserSettings from './pages/dashboard/Admin/UserSettings.tsx';
+import UserSecurity from './pages/dashboard/Admin/UserSecurity.tsx';
+import UserAPIKeys from './pages/dashboard/Admin/UserAPIKeys.tsx';
 import { Toaster } from "sonner";
+import Logs from './pages/dashboard/Logs.tsx';
+import ContainerLogs from './pages/dashboard/ContainerLogs.tsx';
 const App = () => {
   return (
     <AuthProvider>
@@ -28,6 +30,7 @@ const App = () => {
           <Route element={<ProtectedRoute />}>
             
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/containers/:containerName/logs" element={<ContainerLogs />} />
             <Route path="/admin" element={<AdminPanel />} />
 
             <Route path="/profile" element={<Profile />}>
@@ -46,12 +49,7 @@ const App = () => {
             <Route path="/admin" element={<AdminPanel />}>
               <Route index element={<Navigate to="manage_users" replace />} />
               <Route path="manage_users" element={<ManageUsers />} />
-              <Route path="logs" element={
-                <div>
-                  <h2 className="text-2xl font-bold mb-4">Logs</h2>
-                  <p className="text-gray-600">TODO - Future implementation</p>
-                </div>
-              } />
+              <Route path="logs" element={<Logs />} />
             </Route>
 
             <Route path="/user" element={<UserProfile />}>

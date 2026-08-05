@@ -5,8 +5,6 @@ from app.services.docker_manager import docker_manager
 
 router = APIRouter(prefix="/containers", tags=["Container Management"])
 
-class ContainerAction(BaseModel):
-    action: str
 
 @router.get("/")
 async def get_containers_list(user: AdminUser):
@@ -15,11 +13,11 @@ async def get_containers_list(user: AdminUser):
     return await docker_manager.list_homeos_containers()
 
 
-@router.post("/{container_name}/control")
-async def control_container(container_name: str, payload: ContainerAction, user: AdminUser):
+@router.post("/{container_name}/control/{payload}")
+async def control_container(container_name: str, action: str, user: AdminUser):
     """Uruchamia, zatrzymuje lub restartuje kontener."""
 
-    return await docker_manager.control_container(container_name, payload.action)
+    return await docker_manager.control_container(container_name, action)
 
 
 @router.get("/{container_name}/logs")
