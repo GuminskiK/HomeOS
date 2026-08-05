@@ -1,0 +1,114 @@
+from contextlib import asynccontextmanager
+import json
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from sqlmodel import select
+from pathlib import Path as FilePath
+from fastapi import FastAPI, Path
+from app.core.config import settings
+from fastapi.middleware.cors import CORSMiddleware
+
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+from common.rate_limiting import limiter, custom_rate_limit_handler
+from common.logger import setup_logging
+from common.logging_middleware import StructlogMiddleware
+from app.core.config import settings
+from app.models.Users import User
+from sqlalchemy.orm import selectinload
+import os
+import shutil
+
+from app.api import auth, apikeys, two_fa, users, sessions
+
+setup_logging(json_logs=False, log_level="INFO")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from app.core.db import db_deps
+    from app.utils.auth_utils import get_password_hash
+    
+    # Używamy nawiasów bezpośrednio przy bloku `with`, aby za każdym razem tworzyć nową sesję.
+    # W tym wypadku wystarczy nam jedna, złączona sesja dla obu operacji.
+    async with db_deps.AsyncSessionLocal() as session:
+        
+        # --- 1. SYNCHRONIZACJA KLUCZY API Z REDIS ---
+        # Dodajemy .options(selectinload(...)), aby pobrać klucze w tym samym zapytaniu!
+        query = select(User).options(selectinload(User.api_keys))
+        result = await session.exec(query)
+        users_with_keys = result.unique().all() # .unique() zabezpiecza przed duplikatami przy złączeniach
+        
+        for user in users_with_keys:
+            if user.api_keys: # Upewniamy się, że relacja nie jest pusta
+                for api_key in user.api_keys:
+                    await db_deps.get_redis().set(
+                        f"apikey:{api_key.hashed_key}", 
+                        json.dumps({"id": str(api_key.user_id), "username": user.username, "is_superuser": user.is_superuser})
+                    )
+        
+        print("Zsynchronizowano klucze API z Redis")
+
+        # --- 2. TWORZENIE DOMYŚLNEGO ADMINA ---
+        query_users = select(User)
+        result_users = await session.exec(query_users)
+        all_users = result_users.all()
+    
+        if not all_users:
+            hashed_password = get_password_hash(settings.ADMIN_PASSWORD)
+            admin_user = User(
+                username=settings.ADMIN_USERNAME,
+                hashed_password=hashed_password,
+                is_superuser=True,
+            )
+            session.add(admin_user)
+            await session.commit()
+            print("Utworzono domyślnego użytkownika administratora")
+            
+    yield
+
+app = FastAPI(lifespan=lifespan, title=settings.APP_NAME, root_path="/api")
+
+app.add_middleware(StructlogMiddleware)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+app.include_router(auth.router)
+app.include_router(two_fa.router)
+app.include_router(apikeys.router)
+app.include_router(users.router)
+app.include_router(sessions.router)
+
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:8080",
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
+    "http://localhost:5173",
+    "http://localhost:5174",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+@app.get("/static/avatars/{filename}")
+async def serve_avatar(filename: str):
+    file_path = f"/app/static/avatars/{filename}"
+    
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    
+    return {"detail": "Not Found"}

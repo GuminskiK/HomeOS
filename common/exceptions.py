@@ -46,7 +46,7 @@ class AdminNeededException(ForbiddenException):
         super().__init__(detail="Only admin can perform this action")
 
 
-class AdminOrOwnerNeededException(ForbiddenException):
+class CurrentUserNeededException(ForbiddenException):
     def __init__(self, detail: str = "Not authorized to perform this action"):
         super().__init__(detail="Only admin or owner can perform this action")
 

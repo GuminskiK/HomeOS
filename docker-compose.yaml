@@ -40,10 +40,10 @@ services:
   auth:
     build:
       context: .
-      dockerfile: auth/Dockerfile.yaml
+      dockerfile: AB_Auth/Dockerfile.yaml
     container_name: homeos-auth
     ports:
-      - "8001:8000"
+      - "8001:8001"
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-homeos}:${POSTGRES_PASSWORD:-homeos_password}@postgres:5432/homeos
       REDIS_URL: redis://redis:6379/0
@@ -54,12 +54,35 @@ services:
         condition: service_healthy
     volumes:
       - ./common:/app/common:ro
+      - ./static_files:/app/static
+    networks:
+      - homeos-network
+
+  system:
+    build:
+      context: .
+      dockerfile: AC_System/Dockerfile.yaml
+    container_name: homeos-system
+    user: root
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-homeos}:${POSTGRES_PASSWORD:-homeos_password}@postgres:5432/homeos
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./common:/app/common:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - homeos-network
 
   frontend:
     build:
-      context: ./0_Frontend       # Zmieniony kontekst na folder z Dockerfile
+      context: ./AA_Frontend       # Zmieniony kontekst na folder z Dockerfile
       dockerfile: Dockerfile.yaml
     container_name: homeos-frontend
     ports:
@@ -68,14 +91,13 @@ services:
     develop:
       watch:
         - action: sync
-          path: ./0_Frontend/HomeOS   # Synchronizujemy TYLKO kod aplikacji
+          path: ./AA_Frontend/HomeOS   # Synchronizujemy TYLKO kod aplikacji
           target: /app                # Zgadza się z WORKDIR w Dockerfile
           ignore:
             - node_modules/
             - dist/
         - action: rebuild
-          # Ścieżka prowadzi teraz idealnie do pliku
-          path: ./0_Frontend/HomeOS/package.json 
+          path: ./AA_Frontend/HomeOS/package.json 
     depends_on:
       - auth
     networks:
@@ -85,7 +107,7 @@ services:
     image: nginx:latest
     container_name: homeos-nginx
     ports:
-      - "8080:80"
+      - "80:80"
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro

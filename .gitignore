@@ -10,3 +10,5 @@ node_modules/
 **/__pycache__/
 nginx/certs/*
 
+static_files/
+
