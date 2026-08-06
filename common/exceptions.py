@@ -40,6 +40,12 @@ class InternalServerErrorException(AppBaseException):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail
         )
 
+class RequestedRangeNotSatisfiableException(AppBaseException):
+    def __init__(self, detail: str = "Requested range not satisfiable"):
+        super().__init__(
+            status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE, detail=detail
+        )
+
 
 class AdminNeededException(ForbiddenException):
     def __init__(self, detail: str = "Not authorized to perform this action"):

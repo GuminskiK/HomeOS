@@ -80,6 +80,26 @@ services:
     networks:
       - homeos-network
 
+  files:
+    build:
+      context: .
+      dockerfile: AD_Files/Dockerfile.yaml
+    container_name: homeos-files
+    ports:
+      - "8003:8003"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-homeos}:${POSTGRES_PASSWORD:-homeos_password}@postgres:5432/homeos
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./common:/app/common:ro
+    networks:
+      - homeos-network
+
   frontend:
     build:
       context: ./AA_Frontend       # Zmieniony kontekst na folder z Dockerfile
